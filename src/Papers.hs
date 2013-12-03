@@ -36,7 +36,7 @@ data PaperGraph = PaperGraph -- (Graph, Array Int Paper)
     deriving (Show)
 
     
- addToGraph :: PaperGraph -> Paper -> PaperGraph
+ addToGraph :: PaperGraph -> (Paper, [Paper]) -> PaperGraph
  addToGraph = undefined
  
  emptyGraph :: PaperGraph
