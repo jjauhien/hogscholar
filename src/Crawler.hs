@@ -25,7 +25,7 @@ downloadPaper :: Query -> IO (Maybe (Paper,[Paper]))
 downloadPaper = undefined
 
 
-crawlPapers :: Query -> IO (Maybe Papers)
+crawlPapers :: Query -> IO (Maybe PaperGraph)
 crawlPapers = undefined
 
 {- TODO:
