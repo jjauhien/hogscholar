@@ -1,0 +1,18 @@
+Working with HTTP:
+------------------
+	1. HTTP package (Network.HTTP* modules).
+	2. network-minihttp package (Network.MiniHTTP* modules). Lazy, ByteString-oriented.
+
+Graphs:
+-------
+(http://hackage.haskell.org/packages/#cat:Graphs)
+(some article: http://www.haskell.org/haskellwiki/The_Monad.Reader/Issue5/Practical_Graph_Handling)
+	1. containers package (Data.Graph module).
+
+Parsing:
+--------
+
+
+Command-line processing:
+------------------------
+

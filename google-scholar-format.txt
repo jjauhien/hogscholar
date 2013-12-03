@@ -1,0 +1,14 @@
+There are the following form parameters:
+  http://scholar.google.se/scholar?
+as_q=allthewods+atleastone&
+as_epq=exact+phrase&
+as_oq=&
+as_eq=without&
+as_occt=title&
+as_sauthors=Authored%2C+Author2&
+as_publication=Published+In&
+as_ylo=1980&
+as_yhi=2000&
+btnG=&
+hl=en&
+as_sdt=0%2C5

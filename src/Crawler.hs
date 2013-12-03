@@ -27,3 +27,11 @@ downloadPaper = undefined
 
 crawlPapers :: Query -> IO (Maybe Papers)
 crawlPapers = undefined
+
+{- TODO:
+    form HTTP query for Google Scholar
+    receive the resulting HTML page
+    parse it to find the 1st paper and cites list
+    return it
+    crawling: internal limit on papers. Emm... somehow
+-}

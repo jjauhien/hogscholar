@@ -34,3 +34,10 @@ type References = [Paper]
 
 data Papers = Papers -- (Graph, Array Int Paper)
     deriving (Show)
+
+{- TODO:
+    Given results of crawler, build a graph.
+    QuickCheck tests?
+    prune the tree according to "importance" of the paper
+        (like citations size, etc.)
+-}
