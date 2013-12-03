@@ -32,9 +32,15 @@ newtype Author = Author String
 
 type References = [Paper]
 
-data Papers = Papers -- (Graph, Array Int Paper)
+data PaperGraph = PaperGraph -- (Graph, Array Int Paper)
     deriving (Show)
 
+    
+ addToGraph :: PaperGraph -> Paper -> PaperGraph
+ addToGraph = undefined
+ 
+ emptyGraph :: PaperGraph
+ emptyGraph = undefined
 {- TODO:
     Given results of crawler, build a graph.
     QuickCheck tests?
