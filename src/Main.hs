@@ -17,4 +17,13 @@ module Main (
     main
 ) where
 
+import Crawler
+import Papers
+
+
 main = undefined
+
+-- TODO: processing of command line
+-- maybe use: System.Console.GetOpt (see http://www.haskell.org/haskellwiki/High-level_option_handling_with_GetOpt)
+parseArgs :: () -> Query
+parseArgs = undefined
