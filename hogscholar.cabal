@@ -9,13 +9,14 @@ description: FIXME
 data-dir: ""
  
 executable hogscholar
-    build-depends: QuickCheck -any, base -any
+    build-depends: QuickCheck -any, base -any, containers -any
     main-is: Main.hs
     buildable: True
     hs-source-dirs: src
+    other-modules: PrettyPrinter Papers Crawler
  
 test-suite test-hogscholar
-    build-depends: QuickCheck -any, base -any
+    build-depends: QuickCheck -any, base -any, containers -any
     type: exitcode-stdio-1.0
     main-is: Main.hs
     buildable: True

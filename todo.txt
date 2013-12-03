@@ -1,0 +1,4 @@
+	hogscholar --title <title> --year <year> --authors <authors> ...
+
+1. Program allows to search for paper and referencing papers up to some level.
+2. Program allows to search for paper and the papers it refers up to some level.
