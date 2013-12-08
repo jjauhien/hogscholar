@@ -98,11 +98,14 @@ fi (a,b) = (fromIntegral a, fromIntegral b)
 lookupPaper :: PaperGraph -> Vertex -> Paper
 lookupPaper (PaperGraph _ m) v = m M.! v 
 
+lookupPapers :: PaperGraph -> [Vertex] -> [Paper]
+lookupPapers = map . lookupPaper 
+
 --getPapersBy :: PaperGraph -> Author -> [Vertex]
 --getPapersBy (PaperGraph g m) a =  [(v, lookupPaper v)  | v <- vertices g, lookupPaper]       
 
---filter (\p -> a `elem` authors p) zip vs (map lookupPaper vs)
-  --  where vs = vertices g
+getPapersBy p@(PaperGraph g m) a = map fst $ filter (\(_,p) -> a `elem` authors p) $ zip vs (map (lookupPaper p) vs)
+    where vs = vertices g
 
 -- Does paper x cite paper x?
 doesCite :: PaperGraph -> Vertex -> Vertex -> Bool
