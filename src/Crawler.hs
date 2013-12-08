@@ -31,9 +31,9 @@ data Query = Query {
     , qYear    :: Maybe Int
     }
 
--- downloads paper and the papers which refer it
-downloadPaper :: Query -> IO (Maybe (Paper,[Paper]))
-downloadPaper q = undefined
+-- downloads paper and the papers which refer it (not more than n)
+downloadPaper :: Query -> Int -> IO (Maybe (Paper,[Paper]))
+downloadPaper q n = undefined
 
 downloadHTML :: Request String -> IO (Maybe String)
 downloadHTML link = do
@@ -62,22 +62,31 @@ formRequest (Query authors title journal year) =
                       , uriRegName  = "scholar.google.com"
                       , uriPort     = ""}
     uriParams = formEncode $ catMaybes
-                    [ Just ("as_occt", "title")
-                    , formKV "as_epq" title
--- should be "author=Ki&author=Bi", etc.                    , Just ("as_sauthors", (intercalate ",". map (\(Author a) -> a)) authors)
+                    [ formKV "as_q" title
+                    , onlyK "as_epq"
+                    , onlyK "as_oq"
+                    , onlyK "as_eq"
+                    , formKV "as_occt" (Just "title")
+                    , formKV "as_sauthors" (Just . intercalate ", " $ map (\(Author a) -> a) authors)
+                    , formKV "as_publication" journal
                     , formKV "as_ylo" (show `fmap` year)
                     , formKV "as_yhi" (show `fmap` year)
+                    , onlyK "btnG"
+                    , formKV "hl" (Just "en")
+                    , formKV "as_sdt" (Just "0,5")
                     ]
 
 
 formKV :: String -> Maybe String -> Maybe (String,String)
 formKV key val = (\v -> (key,v)) `fmap` val
 
+onlyK key = formKV key (Just "")
 
 dummyRequest = formRequest $
     Query [Author "Liu", Author "Lin", Author "Lin", Author "Chung"]
         (Just "A 480mb/s LDPC-COFDM-based UWB baseband transceiver")
-        Nothing (Just 2005)
+        (Just "Digest of Technical Papers")
+        (Just 2005)
 
 
 crawlPapers :: Query -> IO (Maybe PaperGraph)
