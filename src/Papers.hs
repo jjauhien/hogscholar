@@ -16,8 +16,7 @@ module Papers where
 
 --import Data.Array
 import Data.Graph
-import Data.Map
-
+import qualified Data.Map as M
 
 data Paper = Paper {
       authors :: [Author]
@@ -71,11 +70,11 @@ trd3 (a,b,c) = c
 
 data PaperGraph = PaperGraph {
     graph       :: Graph,
-    map         :: Map Int Paper
+    pMap         :: M.Map Int Paper
     }
 
 emptyGraph :: PaperGraph
-emptyGraph = buildPaperGraph [] empty 
+emptyGraph = buildPaperGraph [] M.empty 
 
 buildPaperGraph l m = PaperGraph (g l) m
 
@@ -83,21 +82,24 @@ buildPaperGraph l m = PaperGraph (g l) m
 --allVerticesMapped vs m = all (\k -> member k m) vs
 
 allVerticesMapped :: PaperGraph -> Bool
-allVerticesMapped (PaperGraph g m) = all (\k -> member k m) (vertices g)
+allVerticesMapped (PaperGraph g m) = all (\k -> M.member k m) (vertices g)
 
 maxl :: (Ord a, Num a) => [(a,a)] -> a 
 maxl l | length l == 0 = 0
-       | otherwise     = maximum $ Prelude.map maxt l
+       | otherwise     = maximum $ map maxt l
             where maxt (a,b) = max a b
     
 v = [(i,j) | i <- [0..3], j <- [0..3], i /= j]
-gr = buildPaperGraph v (fromList [(i, Paper [Author "Pelle"] "Linjär algebra" "The Journal" 2013 ) | i <- [0..3]])
+gr = buildPaperGraph v (M.fromList [(i, Paper [Author "Pelle"] "Linjär algebra" "The Journal" 2013 ) | i <- [0..3]])
 
 fi :: (Integer, Integer) -> (Int, Int)    
 fi (a,b) = (fromIntegral a, fromIntegral b)
 
-doesCite (PaperGraph g _ ) x y = any (==(x,y)) (edges g)
+doesCite (PaperGraph g _ ) x y = (x,y) `elem` (edges g)
+
+--getCitations :: PaperGraph -> Int -> [Int]
+--getCitations = 
 
 --g :: [Edge] -> Graph
 g l = buildG (0, maxl l') l'
-    where l' = Prelude.map fi l
+    where l' = map fi l
