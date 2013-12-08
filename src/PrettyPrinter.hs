@@ -19,3 +19,4 @@ import Papers
 -- FIXME: better output
 prettify :: Papers -> String
 prettify = show Papers
+

@@ -12,9 +12,7 @@
 --
 -----------------------------------------------------------------------------
 
-module Papers (
-    Paper, Author, Papers
-) where
+module Papers where
 
 --import Data.Array
 import Data.Graph
@@ -35,12 +33,12 @@ type References = [Paper]
 data PaperGraph = PaperGraph -- (Graph, Array Int Paper)
     deriving (Show)
 
-    
- addToGraph :: PaperGraph -> (Paper, [Paper]) -> PaperGraph
- addToGraph = undefined
- 
- emptyGraph :: PaperGraph
- emptyGraph = undefined
+
+addToGraph :: PaperGraph -> (Paper, [Paper]) -> PaperGraph
+addToGraph = undefined
+
+emptyGraph :: PaperGraph
+emptyGraph = undefined
 {- TODO:
     Given results of crawler, build a graph.
     QuickCheck tests?
