@@ -57,6 +57,9 @@ unlMap f = unlines . map f
 printList [x] s    = x
 printList (x:xs) s = x ++ s ++ printList xs s
 
+singleton :: Paper -> PaperGraph
+singleton p = mkGraph [(1, p)] [] 
+
 instance Show Paper where
   show p    = "\nTitle: " ++ title p ++ "\nAuthors: " ++ showAuths ++ "\nJournal: " ++ journal p ++ "\nYear: " ++ show (year p) ++ "\n"
         where showAuths = printList(authors p) ", "
