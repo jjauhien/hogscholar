@@ -16,8 +16,7 @@ module Papers where
 
 --import Data.Array
 import Data.Graph
-import Data.Map
-
+import qualified Data.Map as M
 
 data Paper = Paper {
       authors :: [Author]
@@ -71,33 +70,60 @@ trd3 (a,b,c) = c
 
 data PaperGraph = PaperGraph {
     graph       :: Graph,
-    map         :: Map Int Paper
+    pMap         :: M.Map Int Paper
     }
 
 emptyGraph :: PaperGraph
-emptyGraph = buildPaperGraph [] empty 
+emptyGraph = buildPaperGraph [] M.empty 
 
-buildPaperGraph l m = PaperGraph (g l) m
+buildPaperGraph l = PaperGraph (g l)
 
 --allVerticesMapped :: [Integer] -> Map Integer Paper -> Bool
 --allVerticesMapped vs m = all (\k -> member k m) vs
 
 allVerticesMapped :: PaperGraph -> Bool
-allVerticesMapped (PaperGraph g m) = all (\k -> member k m) (vertices g)
+allVerticesMapped (PaperGraph g m) = all (`M.member` m) (vertices g)
 
 maxl :: (Ord a, Num a) => [(a,a)] -> a 
-maxl l | length l == 0 = 0
-       | otherwise     = maximum $ Prelude.map maxt l
+maxl l | null l    = 0
+       | otherwise = maximum $ map maxt l
             where maxt (a,b) = max a b
     
-v = [(i,j) | i <- [0..3], j <- [0..3], i /= j]
-gr = buildPaperGraph v (fromList [(i, Paper [Author "Pelle"] "Linjär algebra" "The Journal" 2013 ) | i <- [0..3]])
+v = [(i,j) | i <- [0..3], j <- [0..3], i > j]
+gr = buildPaperGraph v (M.fromList [(i, Paper [Author "Pelle"] "Linjär algebra" "The Journal" 2013 ) | i <- [0..3]])
 
 fi :: (Integer, Integer) -> (Int, Int)    
 fi (a,b) = (fromIntegral a, fromIntegral b)
 
-doesCite (PaperGraph g _ ) x y = any (==(x,y)) (edges g)
+lookupPaper :: PaperGraph -> Vertex -> Paper
+lookupPaper (PaperGraph _ m) v = m M.! v 
+
+lookupPapers :: PaperGraph -> [Vertex] -> [Paper]
+lookupPapers = map . lookupPaper 
+
+--getPapersBy :: PaperGraph -> Author -> [Vertex]
+--getPapersBy (PaperGraph g m) a =  [(v, lookupPaper v)  | v <- vertices g, lookupPaper]       
+
+getPapersBy p@(PaperGraph g m) a = map fst $ filter (\(_,p) -> a `elem` authors p) $ zip vs (map (lookupPaper p) vs)
+    where vs = vertices g
+
+-- Does paper x cite paper x?
+doesCite :: PaperGraph -> Vertex -> Vertex -> Bool
+doesCite (PaperGraph g _ ) x y = (x,y) `elem` edges g
+
+-- Get all the papers that cites this paper
+getCitations :: PaperGraph -> Int -> [Vertex]
+getCitations = getl fst snd
+
+-- Get all the papers that this paper cites
+getReferences :: PaperGraph -> Int -> [Vertex]
+getReferences = getl snd fst
+
+type TupleElem = ((Vertex,Vertex) -> Vertex)
+
+getl :: TupleElem -> TupleElem -> PaperGraph -> Vertex -> [Vertex]
+getl f f' (PaperGraph g m) v = map f (filter (\e -> f' e == v) (edges g))
 
 --g :: [Edge] -> Graph
 g l = buildG (0, maxl l') l'
-    where l' = Prelude.map fi l
+    where l' = map fi l
