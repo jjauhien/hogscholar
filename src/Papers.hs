@@ -78,9 +78,11 @@ pg' :: Gr Paper String
 pg' = mkGraph [(1, p1), (2, p2), (3, p3)] [(2, 1, "21"), (3, 2, "32"), (3, 1, "31")]
 
 addEdge :: PaperGraphWrapper -> Paper -> Paper ->  PaperGraphWrapper
-addEdge (pg, m) p1 p2  = undefined
+addEdge (pg, m) p2 p1  = (insEdge (n1, n2, ()) pg', m')
     where
     (pg', m') = addPaper p2 . addPaper p1 $ (pg, m)
+    n1 = fromJust $ M.lookup p1 m'
+    n2 = fromJust $ M.lookup p2 m'
 
     
 addPaper :: Paper -> PaperGraphWrapper -> PaperGraphWrapper
