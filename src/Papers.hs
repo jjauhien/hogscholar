@@ -43,19 +43,16 @@ type PaperGraph = Gr Paper String
   --  show p = title p ++ ", " ++ 
 
 
-p1 = Paper (auths["Pelle"]) "Vektorer och matriser" "Matematisk tidskrift" 1953
-p2 = Paper (auths ["Hasse", "Gunnar"]) "Blommor och bin" "Biologisk tidskrift" 1997
-p3 = Paper (auths ["Hasse", "Uffe"]) "Bultar och skruvar" "Mekanisk tidskrift" 2001
-
-auths :: [String] -> [Author]
-auths = map Author
+p1 = Paper (["Pelle"]) "Vektorer och matriser" "Matematisk tidskrift" 1953
+p2 = Paper (["Hasse", "Gunnar"]) "Blommor och bin" "Biologisk tidskrift" 1997
+p3 = Paper (["Hasse", "Uffe"]) "Bultar och skruvar" "Mekanisk tidskrift" 2001
 
 pg' :: Gr Paper String
 
 pg' = mkGraph [(1, p1), (2, p2), (3, p3)] [(2, 1, "21"), (3, 2, "32"), (3, 1, "31")]
 
 addEdge :: Paper -> Paper -> PaperGraph -> PaperGraph
-addEdge = 
+addEdge = undefined
                 
 getCitations :: PaperGraph -> Node -> [Node]
 getCitations = pre
