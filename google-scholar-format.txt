@@ -12,3 +12,26 @@ as_yhi=2000&
 btnG=&
 hl=en&
 as_sdt=0%2C5
+
+Exact phrase ("Error floors of LDPC codes") in the title:
+--------------------------
+http://scholar.google.se/scholar?as_q=&as_epq=Error+floors+of+LDPC+codes&as_oq=&as_eq=&as_occt=title&as_sauthors=&as_publication=&as_ylo=&as_yhi=&btnG=&hl=en&as_sdt=0%2C5
+
+One more:
+---------
+http://scholar.google.com/scholar?
+as_q=A+480mb%2Fs+LDPC-COFDM-based+UWB+baseband+transceiver&
+as_epq=&
+as_oq=&
+as_eq=&
+as_occt=title&
+as_sauthors=Liu%2C+Lin%2C+Lin&
+as_publication=&
+as_ylo=2005&
+as_yhi=2005&
+btnG=&
+hl=en&
+as_sdt=0%2C5
+
+(without authors)
+http://scholar.google.com/scholar?as_q=A+480mb%2Fs+LDPC-COFDM-based+UWB+baseband+transceiver&as_epq=&as_oq=&as_eq=&as_occt=title&as_sauthors=&as_publication=&as_ylo=2005&as_yhi=2005&btnG=&hl=en&as_sdt=0%2C5
