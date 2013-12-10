@@ -29,8 +29,7 @@ data Paper = Paper {
     , year    :: Int
     } deriving (Eq, Show)
 
-newtype Author = Author String
-    deriving (Eq,Show)
+type Author = String
 
 
 {-  
@@ -56,7 +55,7 @@ pg' :: Gr Paper String
 pg' = mkGraph [(1, p1), (2, p2), (3, p3)] [(2, 1, "21"), (3, 2, "32"), (3, 1, "31")]
 
 addEdge :: Paper -> Paper -> PaperGraph -> PaperGraph
-addEdge = undefined
+addEdge = 
                 
 getCitations :: PaperGraph -> Node -> [Node]
 getCitations = pre
