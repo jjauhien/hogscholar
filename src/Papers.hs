@@ -45,18 +45,15 @@ type PaperGraph = Gr Paper String
 --showGr pg = putStr $ unlines $ map (((++ "\n")) . show) (labNodes pg)
   --  where f (n, l) =  show l ++ showPL (pre $ context pg n)  
 
-printGr pg = putStr $ showX (labNodes pg) "\n" (showLNode)
-        where 
-            showX l s f = unlines $ map (((++ s)) . f) l
-            showLNode(n, l)  = show l ++ showX (pre pg n) "\n" (show . title . fromJust . (lab pg))
+printGr pg = putStr $ unlMap showLNode (labNodes pg) 
+        where
+            showLNode(n, l)  = show l ++ "\nCited by:\n" ++ showCitForNode n
+            showCitForNode n | not . null $ pre pg n   = unlMap (show . title . fromJust . lab pg)  (pre pg n) 
+                             | otherwise               = "Noone"
+                 
+unlMap :: (a -> String) -> [a] -> String
+unlMap f = unlines . map f
 
-
-
-
-
-    
---showPL 
-    
 printList [x] s    = x
 printList (x:xs) s = x ++ s ++ printList xs s
 
@@ -66,9 +63,9 @@ instance Show Paper where
               
 
 
-p1 = Paper (["Pelle"]) "Vektorer och matriser" "Matematisk tidskrift" 1953
-p2 = Paper (["Hasse", "Gunnar"]) "Blommor och bin" "Biologisk tidskrift" 1997
-p3 = Paper (["Hasse", "Uffe"]) "Bultar och skruvar" "Mekanisk tidskrift" 2001
+p1 = Paper ["Pelle Pärsson"] "Vektorer och matriser" "Matematisk tidskrift" 1953
+p2 = Paper ["Hasse Hansson", "Gunnar Göransson"] "Blommor och bin" "Biologisk tidskrift" 1997
+p3 = Paper ["Hasse Hansson", "Uffe Svensson"] "Bultar och skruvar" "Mekanisk tidskrift" 2001
 
 pg' :: Gr Paper String
 
@@ -95,7 +92,7 @@ getPapersWhere :: (Paper -> Bool) -> PaperGraph -> [LNode Paper]
 getPapersWhere f pg = filter (f . snd) (labNodes pg)
 
 getPapersBy :: Author -> PaperGraph -> [LNode Paper]
-getPapersBy a = getPapersWhere (\p -> a `elem` (authors p))
+getPapersBy a = getPapersWhere (\p -> a `elem` authors p)
 
 haveCoauthored :: Author -> Author -> PaperGraph -> Bool
 haveCoauthored a1 a2 pg = any hc (labNodes pg)
