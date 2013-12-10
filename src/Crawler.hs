@@ -2,7 +2,8 @@
 
 module Crawler (
       crawlPapers
-    , Query
+    , Query(Query)
+    , emptyQuery
 ) where
 
 import qualified Data.ByteString.Lazy.Char8 as BS
@@ -34,6 +35,8 @@ data Query = Query {
     , qJournal :: Maybe String
     , qYear    :: Maybe Int
     }
+
+emptyQuery = Query [] Nothing Nothing Nothing
 
 paper2query :: Paper -> Query
 paper2query p = Query (authors p)
