@@ -21,26 +21,49 @@ import Data.Graph.Inductive.Tree
 import qualified Data.Graph.Inductive.Graph as IG
 import qualified Data.Map as M
 import Data.List
+import Data.Maybe
 
 data Paper = Paper {
       authors :: [Author]
     , title   :: String
     , journal :: String
     , year    :: Int
-    } deriving (Eq, Show)
+    } deriving (Eq)
 
 type Author = String
 
-
-{-  
-data PaperGraph = PaperGraph {
-        graph = 
--}
-    
 type PaperGraph = Gr Paper String
 
---instance Show Paper where
-  --  show p = title p ++ ", " ++ 
+{-data PaperGraphWrapper = PaperGraphWrapper {
+        graph :: PaperGraph
+    ,   pMap  :: M.Map Paper Node
+    }  deriving (Eq)
+ -}
+
+--showGr pg = showX (show showX  
+ 
+--showGr pg = putStr $ unlines $ map (((++ "\n")) . show) (labNodes pg)
+  --  where f (n, l) =  show l ++ showPL (pre $ context pg n)  
+
+printGr pg = putStr $ showX (labNodes pg) "\n" (showLNode)
+        where 
+            showX l s f = unlines $ map (((++ s)) . f) l
+            showLNode(n, l)  = show l ++ showX (pre pg n) "\n" (show . title . fromJust . (lab pg))
+
+
+
+
+
+    
+--showPL 
+    
+printList [x] s    = x
+printList (x:xs) s = x ++ s ++ printList xs s
+
+instance Show Paper where
+  show p    = "\nTitle: " ++ title p ++ "\nAuthors: " ++ showAuths ++ "\nJournal: " ++ journal p ++ "\nYear: " ++ show (year p) ++ "\n"
+        where showAuths = printList(authors p) ", "
+              
 
 
 p1 = Paper (["Pelle"]) "Vektorer och matriser" "Matematisk tidskrift" 1953
@@ -51,8 +74,13 @@ pg' :: Gr Paper String
 
 pg' = mkGraph [(1, p1), (2, p2), (3, p3)] [(2, 1, "21"), (3, 2, "32"), (3, 1, "31")]
 
-addEdge :: Paper -> Paper -> PaperGraph -> PaperGraph
-addEdge = undefined
+{-addEdge :: Paper -> Paper -> PaperGraphWrapper -> PaperGraphWrapper
+addEdge p1 p2 pgw = do 
+                       let a = insertIfNotPresent p1 (noNodes pgw) ,
+                       insertIfNotPresent p2,-}
+                       
+
+insertIfNotPresent k a m = if k `M.notMember` m then M.insert k a m else m
                 
 getCitations :: PaperGraph -> Node -> [Node]
 getCitations = pre
