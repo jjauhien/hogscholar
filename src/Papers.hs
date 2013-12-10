@@ -32,13 +32,15 @@ data Paper = Paper {
 
 type Author = String
 
-type PaperGraph = Gr Paper String
+type PaperGraph = Gr Paper ()
 
 {-data PaperGraphWrapper = PaperGraphWrapper {
         graph :: PaperGraph
     ,   pMap  :: M.Map Paper Node
     }  deriving (Eq)
  -}
+ 
+type PaperGraphWrapper = (PaperGraph, M.Map Paper Node)
 
 --showGr pg = showX (show showX  
  
@@ -57,14 +59,15 @@ unlMap f = unlines . map f
 printList [x] s    = x
 printList (x:xs) s = x ++ s ++ printList xs s
 
-singleton :: Paper -> PaperGraph
-singleton p = mkGraph [(1, p)] [] 
+singleton :: Paper -> PaperGraphWrapper
+singleton p = (mkGraph [(0, p)] [], M.singleton p 0)
 
 instance Show Paper where
   show p    = "\nTitle: " ++ title p ++ "\nAuthors: " ++ showAuths ++ "\nJournal: " ++ journal p ++ "\nYear: " ++ show (year p) ++ "\n"
         where showAuths = printList(authors p) ", "
               
-
+instance Ord Paper where
+    p1 <= p2 = title p1 <= title p2
 
 p1 = Paper ["Pelle Pärsson"] "Vektorer och matriser" "Matematisk tidskrift" 1953
 p2 = Paper ["Hasse Hansson", "Gunnar Göransson"] "Blommor och bin" "Biologisk tidskrift" 1997
@@ -74,14 +77,21 @@ pg' :: Gr Paper String
 
 pg' = mkGraph [(1, p1), (2, p2), (3, p3)] [(2, 1, "21"), (3, 2, "32"), (3, 1, "31")]
 
-{-addEdge :: Paper -> Paper -> PaperGraphWrapper -> PaperGraphWrapper
-addEdge p1 p2 pgw = do 
-                       let a = insertIfNotPresent p1 (noNodes pgw) ,
-                       insertIfNotPresent p2,-}
-                       
+addEdge :: PaperGraphWrapper -> Paper -> Paper ->  PaperGraphWrapper
+addEdge (pg, m) p1 p2  = undefined
+    where
+    (pg', m') = addPaper p2 . addPaper p1 $ (pg, m)
 
+    
+addPaper :: Paper -> PaperGraphWrapper -> PaperGraphWrapper
+addPaper p (pg, m) = case M.lookup p m of 
+                        Just _ -> (pg, m)
+                        Nothing -> (insNode (noNs, p) pg, M.insert p noNs m)
+    where
+    noNs = noNodes pg
+    
 insertIfNotPresent k a m = if k `M.notMember` m then M.insert k a m else m
-                
+ {-               
 getCitations :: PaperGraph -> Node -> [Node]
 getCitations = pre
 
@@ -97,6 +107,7 @@ getPapersWhere f pg = filter (f . snd) (labNodes pg)
 getPapersBy :: Author -> PaperGraph -> [LNode Paper]
 getPapersBy a = getPapersWhere (\p -> a `elem` authors p)
 
+
 haveCoauthored :: Author -> Author -> PaperGraph -> Bool
 haveCoauthored a1 a2 pg = any hc (labNodes pg)
     where hc n = a1 `elem` as && a2 `elem` as
@@ -108,7 +119,7 @@ mostCitedPaper pg = fst $ foldr1 max' (map (\(n,_) -> (n, indeg pg n)) (labNodes
     where  max' x y | snd x > snd y = x
                     | otherwise     = y
 
-    
+-}    
 --instance Show PaperGraph where
   --  show p = show (graph  p)
 
