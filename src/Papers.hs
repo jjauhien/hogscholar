@@ -15,8 +15,12 @@
 module Papers where
 
 --import Data.Array
-import Data.Graph
+--import Data.Graph
+import Data.Graph.Inductive
+import Data.Graph.Inductive.Tree
+import qualified Data.Graph.Inductive.Graph as IG
 import qualified Data.Map as M
+import Data.List
 
 data Paper = Paper {
       authors :: [Author]
@@ -30,8 +34,60 @@ newtype Author = Author String
 
 --type Key = Int
 --type Node = String
-type References = [Paper]
+type PaperGraph = Gr Paper String
 
+
+p1 = Paper (auths["Pelle"]) "Vektorer och matriser" "Matematisk tidskrift" 1953
+p2 = Paper (auths ["Hasse", "Gunnar"]) "Blommor och bin" "Biologisk tidskrift" 1997
+p3 = Paper (auths ["Hasse", "Uffe"]) "Bultar och skruvar" "Mekanisk tidskrift" 2001
+
+auths :: [String] -> [Author]
+auths = map Author
+
+pg' :: Gr Paper String
+
+pg' = buildGr
+    [   ([("p2-p1", 2), ("p3-p1", 1)],                                1, p1,     [])
+        ,([("p3-p1", 3)],                 2, p2,     []) 
+        ,([],                                           3, p3,     [])
+    ]
+
+cyc3  :: Gr Char String
+
+cyc3 = buildGr                                -- cycle of three nodes
+       [([("ca",3)],1,'a',[("ab",2)]),
+                ([],2,'b',[("bc",3)]),
+                ([],3,'c',[])]
+
+
+                
+getCitations :: PaperGraph -> Node -> [Node]
+getCitations = pre
+
+getReferences :: PaperGraph -> Node -> [Node]
+getReferences = suc
+
+doesCite :: PaperGraph -> Node -> Node -> Bool
+doesCite pg x y = x `elem` pre pg y
+
+getPapersWhere :: (Paper -> Bool) -> PaperGraph -> [LNode Paper]
+getPapersWhere f pg = filter (f . snd) (labNodes pg)
+
+getPapersBy :: Author -> PaperGraph -> [LNode Paper]
+getPapersBy a = getPapersWhere (\p -> a `elem` (authors p))
+
+haveCoauthored :: Author -> Author -> PaperGraph -> Bool
+haveCoauthored a1 a2 pg = any hc (labNodes pg)
+    where hc n = a1 `elem` as && a2 `elem` as
+                where as = (authors . snd) n
+    
+            
+mostCitedPaper :: PaperGraph -> Node
+mostCitedPaper pg = fst $ foldr1 max' (map (\(n,_) -> (n, indeg pg n)) (labNodes pg))
+    where  max' x y | snd x > snd y = x
+                    | otherwise     = y
+
+{-
 
 
 {-data PaperGraph = PaperGraph {
@@ -106,6 +162,8 @@ lookupPapers = map . lookupPaper
 
 getPapersBy p@(PaperGraph g m) a = map fst $ filter (\(_,p) -> a `elem` authors p) $ zip vs (map (lookupPaper p) vs)
     where vs = vertices g
+    
+
 
 -- Does paper x cite paper x?
 doesCite :: PaperGraph -> Vertex -> Vertex -> Bool
@@ -127,3 +185,4 @@ getl f f' (PaperGraph g m) v = map f (filter (\e -> f' e == v) (edges g))
 --g :: [Edge] -> Graph
 g l = buildG (0, maxl l') l'
     where l' = map fi l
+-}
