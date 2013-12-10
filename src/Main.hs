@@ -1,18 +1,3 @@
-{-# LANGUAGE CPP, TemplateHaskell #-}
------------------------------------------------------------------------------
---
--- Module      :  Main
--- Copyright   :
--- License     :  AllRightsReserved
---
--- Maintainer  :
--- Stability   :
--- Portability :
---
--- |
---
------------------------------------------------------------------------------
-
 module Main (
     main
 ) where
@@ -29,7 +14,7 @@ main = do
     mpg <- crawlPapers q l
     case mpg of
         Nothing -> ioError . userError $ "graph was not build :("
-        Just pg -> print pg
+        Just pgw -> printGr (fst pgw)
 
 -----------------------------------------------------------------------------
 -- command-line arguments processing
