@@ -1,43 +1,30 @@
------------------------------------------------------------------------------
---
--- Module      :  Crawler
--- Copyright   :
--- License     :  AllRightsReserved
---
--- Maintainer  :
--- Stability   :
--- Portability :
---
--- |
---
------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 
-module Crawler where
+module Crawler (
+      crawlPapers
+    , Query
+) where
 
-import Data.ByteString.Lazy.Char8 (pack)
+import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.List
 import Data.List.Split (wordsBy, splitOn)
 import Data.Maybe
-import qualified Data.Map as M
-import qualified Data.Text as T
+import Data.Functor ((<$>))
+import qualified Data.Map as Map
+import qualified Data.Text as Text
 
-import Control.Monad (guard)
-import Control.Monad.Trans.Maybe
+import Control.Monad (foldM)
 import Control.Monad.Trans.Class (lift)
 
-import Network.CGI.Protocol
+import Network.CGI.Protocol (formEncode)
 import Network.HTTP
-import Network.URI
+import Network.URI (parseURI)
 
 import Text.HTML.DOM (parseLBS)
-import Text.XML (Node(NodeElement,NodeContent), elementNodes, elementAttributes,
-                 nameLocalName)
-import Text.XML.Cursor (Cursor, Axis, attributeIs, content, element,
-                        child, node, fromDocument,
-                        ($//), (&|), (&//), (>=>))
+import Text.XML hiding (parseLBS)
+import Text.XML.Cursor
 
-import Papers (Author(Author), Paper(Paper), PaperGraph)
+import Papers
 
 -----------------------------------------------------------------------------
 
@@ -48,15 +35,39 @@ data Query = Query {
     , qYear    :: Maybe Int
     }
 
+paper2query :: Paper -> Query
+paper2query p = Query (authors p)
+                      (Just $ title p)
+                      (Just $ journal p)
+                      (Just $ year p)
+
 -----------------------------------------------------------------------------
 -- Networking
 -----------------------------------------------------------------------------
 
--- downloads paper and the papers which refer it (not more than n)
--- FIXME: use MaybeT
-downloadPaper :: Query -> IO (Maybe (Paper,[Paper])) -- MaybeT IO (Paper,[Paper])
+-- recursivyle requests information about papers,
+--  not more than lvl levels
+crawlPapers :: Query -> Int -> IO (Maybe PaperGraph)
+crawlPapers q lvl = do
+    r <- downloadPaper . formRequest $ q
+    case r of
+        Nothing     -> return Nothing
+        Just (p,ps) -> Just <$> crawl (singleton p) (p,ps) lvl
+    where
+    singleton p = undefined
+    crawl :: PaperGraph -> (Paper,[Paper]) -> Int -> IO PaperGraph
+    crawl _  _ lvl | lvl < 0 = error "crawlPapers: level is negative"
+    crawl pg _      0   = return pg
+    crawl pg (p,ps) lvl = do
+        subPs <- catMaybes <$> mapM (downloadPaper . formRequest . paper2query) ps
+        let pg' = foldl (\accPg pap -> addEdge p pap accPg) pg ps
+        foldM (\accPg (p,ps) -> crawl accPg (p,ps) (lvl-1)) pg' subPs
+
+
+-- tries to download the paper and the papers which directly refer it
+downloadPaper :: Request String -> IO (Maybe (Paper,[Paper]))
 downloadPaper q = do
-    s <- downloadHTML . formRequest $ q
+    s <- downloadHTML q
     case s >>= listToMaybe . parsePage of
         Nothing -> return Nothing
         Just (pap, req) -> do
@@ -64,11 +75,9 @@ downloadPaper q = do
             case resp of
                 Nothing -> return $ Just (pap, [])
                 Just s1 -> return $ Just (pap, map fst . parsePage $ s1)
-    where
-    getCites (pap, req) = undefined
-    mapSnd f (x,y) = (x,f y)
 
 
+-- tries to download HTML page
 downloadHTML :: Request String -> IO (Maybe String)
 downloadHTML link = do
     resp <- simpleHTTP link
@@ -76,32 +85,22 @@ downloadHTML link = do
         Left _  -> return Nothing   -- some error
         Right r -> case rspCode r of
                     (2,_,_) -> return $ Just (rspBody r)
-                    _       -> return Nothing  -- e.g. redirect FIXME
+                    _       -> return Nothing  -- e.g. redirect
 
 
--- creates request
+-- forms HTTP request from Query
 formRequest :: Query -> Request String
 formRequest (Query authors title journal year) =
-        Request { rqURI     = uri
-                , rqMethod  = GET
-                , rqHeaders = []
-                , rqBody    = ""}
+        getRequest url
     where
-    uri = URI { uriScheme    = "http:"
-              , uriAuthority = Just uriAuth
-              , uriPath      = "/scholar"
-              , uriQuery     = '?' : uriParams
-              , uriFragment  = ""}
-    uriAuth = URIAuth { uriUserInfo = ""
-                      , uriRegName  = "scholar.google.com"
-                      , uriPort     = ""}
-    uriParams = formEncode $ catMaybes
+    url = "http://scholar.google.com/scholar?" ++ params
+    params = formEncode $ catMaybes
                     [ formKV "as_q" title
                     , onlyK "as_epq"
                     , onlyK "as_oq"
                     , onlyK "as_eq"
                     , formKV "as_occt" (Just "title")
-                    , formKV "as_sauthors" (Just . intercalate ", " $ map (\(Author a) -> a) authors)
+                    , formKV "as_sauthors" (Just . intercalate ", " $ authors)
                     , formKV "as_publication" journal
                     , formKV "as_ylo" (show `fmap` year)
                     , formKV "as_yhi" (show `fmap` year)
@@ -109,20 +108,15 @@ formRequest (Query authors title journal year) =
                     , formKV "hl" (Just "en")
                     , formKV "as_sdt" (Just "0,5")
                     ]
-    formKV key val = (\v -> (key,v)) `fmap` val
+    formKV key val = (\v -> (key,v)) <$> val
     onlyK  key     = formKV key (Just "")
 
 
-dummyQuery = Query [Author "Liu", Author "Lin", Author "Lin", Author "Chung"]
+dummyQuery = Query []
                     (Just "A 480mb/s LDPC-COFDM-based UWB baseband transceiver")
-                    (Just "Digest of Technical Papers")
-                    (Just 2005)
+                    Nothing Nothing
 dummyRequest = formRequest dummyQuery
 dummyPage = downloadHTML dummyRequest
-
-
-crawlPapers :: Query -> IO (Maybe PaperGraph)
-crawlPapers = undefined
 
 -----------------------------------------------------------------------------
 -- HTML/XML parsing
@@ -131,7 +125,8 @@ crawlPapers = undefined
 -- parses all the papers on the results page
 -- returns a list (Paper, Request to get list of citators)
 parsePage :: String -> [(Paper, Request String)]
-parsePage = map node2paper . ($// findPaperNodes) . fromDocument . parseLBS . pack
+parsePage = map node2paper . ($// findPaperNodes) . fromDocument .
+            parseLBS . BS.pack
 
 
 -- all div elements, which have class "gs_r"
@@ -160,34 +155,27 @@ node2paper cur = (Paper auths titl jour yr,
               str' = helper str
     authJourYr = splitOn " - " . filter (/= '\8230') .pruneTags . head .
         ($// (element "div" >=> attributeIs "class" "gs_a")) $ cur
-    auths = map (Author . pruneSpaces) . wordsBy (==',') . head $ authJourYr
+    auths = map pruneSpaces . wordsBy (==',') . head $ authJourYr
     jour = pruneSpaces . concat . init . wordsBy(==',') . head . tail $ authJourYr
     yr = read . pruneSpaces . last . wordsBy (==',') . head . tail $ authJourYr
     cites = case node. head . ($// element "a") . head .
         ($// (element "div" >=> attributeIs "class" "gs_fl")) $ cur of
             NodeElement e ->
-                case M.toList . M.filterWithKey (\name _ -> nameLocalName name == "href") . elementAttributes $ e of
-                    (_,url):_ -> "http://scholar.google.com" ++ T.unpack url
+                case Map.toList .
+                     Map.filterWithKey (\name _ -> nameLocalName name == "href") .
+                     elementAttributes $ e of
+                    (_,url):_ -> "http://scholar.google.com" ++ Text.unpack url
                     []        -> ""
             _             -> ""
     pruneSpaces = reverse . dropWhile (== ' ') . reverse . dropWhile (== ' ')
 
 
--- converts tag tree to simple text
+-- converts tag tree to a plain text without any tags
 pruneTags :: Cursor -> String
-pruneTags = T.unpack . pruneTags' . node
+pruneTags = Text.unpack . pruneTags' . node
     where
-    pruneTags' :: Node -> T.Text
-    pruneTags' (NodeElement e) = T.concat . map pruneTags' $ elementNodes e
+    pruneTags' :: Node -> Text.Text
+    pruneTags' (NodeElement e) = Text.concat . map pruneTags' . elementNodes $ e
     pruneTags' (NodeContent c) = c
     pruneTags' _               = ""
 
-
-
-{- TODO:
-    form HTTP query for Google Scholar
-    receive the resulting HTML page
-    parse it to find the 1st paper and cites list
-    return it
-    crawling: internal limit on papers. Emm... somehow
--}

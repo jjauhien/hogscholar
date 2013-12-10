@@ -10,8 +10,9 @@ data-dir: ""
  
 executable hogscholar
     build-depends: HTTP -any, QuickCheck -any, base -any,
-                   bytestring -any, cgi -any, containers -any, html-conduit -any,
-                   network -any, text -any, xml-conduit -any
+                   bytestring -any, cgi -any, containers -any, fgl -any,
+                   html-conduit -any, network -any, split -any, text -any,
+                   transformers -any, xml-conduit -any
     main-is: Main.hs
     buildable: True
     hs-source-dirs: src
@@ -19,8 +20,9 @@ executable hogscholar
  
 test-suite test-hogscholar
     build-depends: HTTP -any, QuickCheck -any, base -any,
-                   bytestring -any, cgi -any, containers -any, html-conduit -any,
-                   network -any, text -any, xml-conduit -any
+                   bytestring -any, cgi -any, containers -any, fgl -any,
+                   html-conduit -any, network -any, split -any, text -any,
+                   transformers -any, xml-conduit -any
     type: exitcode-stdio-1.0
     main-is: Main.hs
     buildable: True
