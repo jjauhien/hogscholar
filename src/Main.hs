@@ -7,7 +7,6 @@ import System.Console.GetOpt
 
 import Crawler
 import Papers
-import PrettyPrinter
 
 main = do
     (l,q) <- parseInput
