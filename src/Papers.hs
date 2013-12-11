@@ -41,6 +41,13 @@ newtype LastName = LastName String
 --instance Arbitrary Paper where
 --    arbitrary = Paper (oneof [["a"]]) (oneof ["a"])  (oneof ["a"])  (choose (1890, 2013))
 
+instance Show Paper where
+  show p    = show (title p) ++ ". " ++ showAuths ++ ". " ++ journal p ++ ", " ++ show (year p) ++ "\n"
+        where showAuths = showList'(authors p) ", "
+              
+instance Ord Paper where
+    p1 <= p2 = title p1 <= title p2
+
 --Print a PaperGraph
 printGr :: PaperGraph -> IO ()
 printGr pg = putStr $ unlMap showLNode (labNodes pg) 
@@ -62,13 +69,6 @@ showList' (x:xs) s = x ++ s ++ showList' xs s
 -- Return a PaperGraphWrapper with a single node
 singleton :: Paper -> PaperGraphWrapper
 singleton p = (mkGraph [(0, p)] [], M.singleton p 0)
-
-instance Show Paper where
-  show p    = show (title p) ++ ". " ++ showAuths ++ ". " ++ journal p ++ ", " ++ show (year p) ++ "\n"
-        where showAuths = showList'(authors p) ", "
-              
-instance Ord Paper where
-    p1 <= p2 = title p1 <= title p2
 
 -- Add an edge to the graph
 addEdge :: PaperGraphWrapper -> Paper -> Paper ->  PaperGraphWrapper
@@ -120,8 +120,6 @@ mostCitedPaper pg = fst $ foldr1 max' (map (\(n,_) -> (n, indeg pg n)) (labNodes
                     | otherwise     = y
 
 -- Used for testing
-
-
 
 -- If there exists a paper with more than one author, there should exist at least one pair of coauthors 
 prop_auths :: PaperGraph -> Bool
