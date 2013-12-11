@@ -14,12 +14,13 @@ import Data.Functor ((<$>))
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 
+import Control.Concurrent (threadDelay)
 import Control.Monad (foldM)
 import Control.Monad.Trans.Class (lift)
 
 import Network.CGI.Protocol (formEncode)
 import Network.HTTP
-import Network.URI (parseURI)
+import Network.URI
 
 import Text.HTML.DOM (parseLBS)
 import Text.XML hiding (parseLBS)
@@ -34,7 +35,7 @@ data Query = Query {
     , qTitle   :: Maybe String
     , qJournal :: Maybe String
     , qYear    :: Maybe Int
-    }
+    } deriving Show
 
 emptyQuery = Query [] Nothing Nothing Nothing
 
@@ -50,20 +51,19 @@ paper2query p = Query (authors p)
 
 -- recursivyle requests information about papers,
 --  not more than lvl levels
-crawlPapers :: Query -> Int -> IO (Maybe PaperGraph)
+crawlPapers :: Query -> Int -> IO (Maybe PaperGraphWrapper)
 crawlPapers q lvl = do
     r <- downloadPaper . formRequest $ q
     case r of
         Nothing     -> return Nothing
         Just (p,ps) -> Just <$> crawl (singleton p) (p,ps) lvl
     where
-    singleton p = undefined
-    crawl :: PaperGraph -> (Paper,[Paper]) -> Int -> IO PaperGraph
-    crawl _  _ lvl | lvl < 0 = error "crawlPapers: level is negative"
-    crawl pg _      0   = return pg
-    crawl pg (p,ps) lvl = do
+    crawl :: PaperGraphWrapper -> (Paper,[Paper]) -> Int -> IO PaperGraphWrapper
+    crawl _   _ lvl | lvl < 0 = error "crawlPapers: level is negative"
+    crawl pgw _      0   = return pgw
+    crawl pgw (p,ps) lvl = do
         subPs <- catMaybes <$> mapM (downloadPaper . formRequest . paper2query) ps
-        let pg' = foldl (\accPg pap -> addEdge p pap accPg) pg ps
+        let pg' = foldl (\accPgw pap -> addEdge accPgw p pap) pgw ps
         foldM (\accPg (p,ps) -> crawl accPg (p,ps) (lvl-1)) pg' subPs
 
 
@@ -72,7 +72,7 @@ downloadPaper :: Request String -> IO (Maybe (Paper,[Paper]))
 downloadPaper q = do
     s <- downloadHTML q
     case s >>= listToMaybe . parsePage of
-        Nothing -> return Nothing
+        Nothing         -> return Nothing
         Just (pap, req) -> do
             resp <- downloadHTML req
             case resp of
@@ -84,6 +84,7 @@ downloadPaper q = do
 downloadHTML :: Request String -> IO (Maybe String)
 downloadHTML link = do
     resp <- simpleHTTP link
+    threadDelay 500000 -- sleep for 0.5 second
     case resp of
         Left _  -> return Nothing   -- some error
         Right r -> case rspCode r of
@@ -91,13 +92,23 @@ downloadHTML link = do
                     _       -> return Nothing  -- e.g. redirect
 
 
--- forms HTTP request from Query
+-- form HTTP request from query
 formRequest :: Query -> Request String
 formRequest (Query authors title journal year) =
-        getRequest url
+        Request { rqURI = uri
+                , rqMethod = GET
+                , rqHeaders = []
+                , rqBody = ""}
     where
-    url = "http://scholar.google.com/scholar?" ++ params
-    params = formEncode $ catMaybes
+    uri = URI { uriScheme = "http:"
+              , uriAuthority = Just uriAuth
+              , uriPath = "/scholar"
+              , uriQuery = '?' : uriParams
+              , uriFragment = ""}
+    uriAuth = URIAuth { uriUserInfo = ""
+                      , uriRegName = "scholar.google.com"
+                      , uriPort = ""}
+    uriParams = formEncode $ catMaybes
                     [ formKV "as_q" title
                     , onlyK "as_epq"
                     , onlyK "as_oq"
@@ -111,8 +122,8 @@ formRequest (Query authors title journal year) =
                     , formKV "hl" (Just "en")
                     , formKV "as_sdt" (Just "0,5")
                     ]
-    formKV key val = (\v -> (key,v)) <$> val
-    onlyK  key     = formKV key (Just "")
+    formKV key val = (\v -> (key,v)) `fmap` val
+    onlyK key = formKV key (Just "")
 
 
 dummyQuery = Query []
@@ -160,7 +171,8 @@ node2paper cur = (Paper auths titl jour yr,
         ($// (element "div" >=> attributeIs "class" "gs_a")) $ cur
     auths = map pruneSpaces . wordsBy (==',') . head $ authJourYr
     jour = pruneSpaces . concat . init . wordsBy(==',') . head . tail $ authJourYr
-    yr = read . pruneSpaces . last . wordsBy (==',') . head . tail $ authJourYr
+    yr = fst . head . (++ [(3000,"")]) . reads . pruneSpaces . last .
+            wordsBy (==',') . head . tail $ authJourYr
     cites = case node. head . ($// element "a") . head .
         ($// (element "div" >=> attributeIs "class" "gs_fl")) $ cur of
             NodeElement e ->
