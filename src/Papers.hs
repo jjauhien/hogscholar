@@ -20,6 +20,7 @@ import qualified Data.Graph.Inductive.Graph as IG
 import qualified Data.Map as M
 import Data.List
 import Data.Maybe
+import Test.QuickCheck
 
 data Paper = Paper {
       authors :: [Author]
@@ -33,6 +34,12 @@ type Author = String
 type PaperGraph = Gr Paper ()
 
 type PaperGraphWrapper = (PaperGraph, M.Map Paper Node)
+
+newtype FirstName = FirstName String
+newtype LastName = LastName String
+
+--instance Arbitrary Paper where
+--    arbitrary = Paper (oneof [["a"]]) (oneof ["a"])  (oneof ["a"])  (choose (1890, 2013))
 
 --Print a PaperGraph
 printGr :: PaperGraph -> IO ()
@@ -114,7 +121,12 @@ mostCitedPaper pg = fst $ foldr1 max' (map (\(n,_) -> (n, indeg pg n)) (labNodes
 
 -- Used for testing
 
---prop_auths pg = (not . null) (getPapersWhere (\p -> authors p > 1) pg) == or[haveCoauthored x y pg | x <- authors pg, y <- authors pg, ] 
+
+
+-- If there exists a paper with more than one author, there should exist at least one pair of coauthors 
+prop_auths :: PaperGraph -> Bool
+prop_auths pg = (not . null) (getPapersWhere (\p -> (length . authors) p > 1) pg) == or[haveCoauthored x y pg | x <- auths, y <- auths]
+    where auths = nub $ concatMap (authors . snd) (labNodes pg)
                     
 p1 = Paper ["Pelle Pärsson"] "Vektorer och matriser" "Matematisk tidskrift" 1953
 p2 = Paper ["Hasse Hansson", "Gunnar Göransson"] "Blommor och bin" "Biologisk tidskrift" 1997
