@@ -14,8 +14,6 @@
 
 module Papers where
 
---import Data.Array
---import Data.Graph
 import Data.Graph.Inductive
 import Data.Graph.Inductive.Tree
 import qualified Data.Graph.Inductive.Graph as IG
@@ -34,53 +32,38 @@ type Author = String
 
 type PaperGraph = Gr Paper ()
 
-{-data PaperGraphWrapper = PaperGraphWrapper {
-        graph :: PaperGraph
-    ,   pMap  :: M.Map Paper Node
-    }  deriving (Eq)
- -}
- 
 type PaperGraphWrapper = (PaperGraph, M.Map Paper Node)
 
---showGr pg = showX (show showX  
- 
---showGr pg = putStr $ unlines $ map (((++ "\n")) . show) (labNodes pg)
-  --  where f (n, l) =  show l ++ showPL (pre $ context pg n)  
-
-
+--Print a PaperGraph
+printGr :: PaperGraph -> IO ()
 printGr pg = putStr $ unlMap showLNode (labNodes pg) 
         where
-            showLNode(n, l)  = show l ++ "\nCited by:\n" ++ showCitForNode n ++ "\n\nCites:\n" ++ showRefForNode n
+            showLNode(n, l)  = "\n" ++ show l ++ "Cites: " ++ showRefForNode n ++ "\nCited by: " ++ showCitForNode n
             showCitForNode   = showNeiForNode pre 
             showRefForNode   = showNeiForNode suc 
-            showNeiForNode f n | (not . null) nei  = unlMap (show . title . fromJust . lab pg) nei 
+            showNeiForNode f n | (not . null) nei  = showList' (map (show . title . fromJust . lab pg) nei) "," 
                                | otherwise  = "Noone"
                                 where nei = f pg n -- list of either predecessors or successors
                  
 unlMap :: (a -> String) -> [a] -> String
 unlMap f = unlines . map f
 
-printList [x] s    = x
-printList (x:xs) s = x ++ s ++ printList xs s
 
+showList' [x] s    = x
+showList' (x:xs) s = x ++ s ++ showList' xs s
+
+-- Return a PaperGraphWrapper with a single node
 singleton :: Paper -> PaperGraphWrapper
 singleton p = (mkGraph [(0, p)] [], M.singleton p 0)
 
 instance Show Paper where
-  show p    = "\nTitle: " ++ title p ++ "\nAuthors: " ++ showAuths ++ "\nJournal: " ++ journal p ++ "\nYear: " ++ show (year p) ++ "\n"
-        where showAuths = printList(authors p) ", "
+  show p    = show (title p) ++ ". " ++ showAuths ++ ". " ++ journal p ++ ", " ++ show (year p) ++ "\n"
+        where showAuths = showList'(authors p) ", "
               
 instance Ord Paper where
     p1 <= p2 = title p1 <= title p2
 
-p1 = Paper ["Pelle Pärsson"] "Vektorer och matriser" "Matematisk tidskrift" 1953
-p2 = Paper ["Hasse Hansson", "Gunnar Göransson"] "Blommor och bin" "Biologisk tidskrift" 1997
-p3 = Paper ["Hasse Hansson", "Uffe Svensson"] "Bultar och skruvar" "Mekanisk tidskrift" 2001
-
-pg' :: Gr Paper String
-
-pg' = mkGraph [(1, p1), (2, p2), (3, p3)] [(2, 1, "21"), (3, 2, "32"), (3, 1, "31")]
-
+-- Add an edge to the graph
 addEdge :: PaperGraphWrapper -> Paper -> Paper ->  PaperGraphWrapper
 addEdge (pg, m) p2 p1  = (insEdge (n1, n2, ()) pg', m')
     where
@@ -88,55 +71,55 @@ addEdge (pg, m) p2 p1  = (insEdge (n1, n2, ()) pg', m')
     n1 = fromJust $ M.lookup p1 m'
     n2 = fromJust $ M.lookup p2 m'
 
-    
+-- Add a paper node to the graph
 addPaper :: Paper -> PaperGraphWrapper -> PaperGraphWrapper
 addPaper p (pg, m) = case M.lookup p m of 
                         Just _ -> (pg, m)
                         Nothing -> (insNode (noNs, p) pg, M.insert p noNs m)
     where
     noNs = noNodes pg
-    
-insertIfNotPresent k a m = if k `M.notMember` m then M.insert k a m else m
-               
+
+-- Get papers that cites this paper
 getCitations :: PaperGraph -> Node -> [Node]
 getCitations = pre
 
+
+-- Get papers that this paper has cited
 getReferences :: PaperGraph -> Node -> [Node]
 getReferences = suc
 
+-- Does paper x cite paper y
 doesCite :: PaperGraph -> Node -> Node -> Bool
 doesCite pg x y = x `elem` pre pg y
 
+-- Get papers that fulfulls condition f
 getPapersWhere :: (Paper -> Bool) -> PaperGraph -> [LNode Paper]
 getPapersWhere f pg = filter (f . snd) (labNodes pg)
 
+-- Get all papers by author a
 getPapersBy :: Author -> PaperGraph -> [LNode Paper]
 getPapersBy a = getPapersWhere (\p -> a `elem` authors p)
 
-
+-- Have authors a1 and a2 written any papers together
 haveCoauthored :: Author -> Author -> PaperGraph -> Bool
 haveCoauthored a1 a2 pg = any hc (labNodes pg)
     where hc n = a1 `elem` as && a2 `elem` as
                 where as = (authors . snd) n
     
-            
+-- Get paper with the highest number of citations   
 mostCitedPaper :: PaperGraph -> Node
 mostCitedPaper pg = fst $ foldr1 max' (map (\(n,_) -> (n, indeg pg n)) (labNodes pg))
     where  max' x y | snd x > snd y = x
                     | otherwise     = y
 
-   
---instance Show PaperGraph where
-  --  show p = show (graph  p)
+-- Used for testing
 
+--prop_auths pg = (not . null) (getPapersWhere (\p -> authors p > 1) pg) == or[haveCoauthored x y pg | x <- authors pg, y <- authors pg, ] 
+                    
+p1 = Paper ["Pelle Pärsson"] "Vektorer och matriser" "Matematisk tidskrift" 1953
+p2 = Paper ["Hasse Hansson", "Gunnar Göransson"] "Blommor och bin" "Biologisk tidskrift" 1997
+p3 = Paper ["Hasse Hansson", "Uffe Svensson"] "Bultar och skruvar" "Mekanisk tidskrift" 2001
 
-addToGraph :: PaperGraph -> (Paper, [Paper]) -> PaperGraph
-addToGraph = undefined
+pg' :: PaperGraph
 
-{- TODO:
-    Given results of crawler, build a graph.
-    QuickCheck tests?
-    prune the tree according to "importance" of the paper
-        (like citations size, etc.)
-
--}
+pg' = mkGraph [(1, p1), (2, p2), (3, p3)] [(2, 1, ()), (3, 2, ()), (3, 1, ())]
