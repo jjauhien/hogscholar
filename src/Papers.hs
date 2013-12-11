@@ -47,11 +47,15 @@ type PaperGraphWrapper = (PaperGraph, M.Map Paper Node)
 --showGr pg = putStr $ unlines $ map (((++ "\n")) . show) (labNodes pg)
   --  where f (n, l) =  show l ++ showPL (pre $ context pg n)  
 
+
 printGr pg = putStr $ unlMap showLNode (labNodes pg) 
         where
-            showLNode(n, l)  = show l ++ "\nCited by:\n" ++ showCitForNode n
-            showCitForNode n | not . null $ pre pg n   = unlMap (show . title . fromJust . lab pg)  (pre pg n) 
-                             | otherwise               = "Noone"
+            showLNode(n, l)  = show l ++ "\nCited by:\n" ++ showCitForNode n ++ "\n\nCites:\n" ++ showRefForNode n
+            showCitForNode   = showNeiForNode pre 
+            showRefForNode   = showNeiForNode suc 
+            showNeiForNode f n | (not . null) nei  = unlMap (show . title . fromJust . lab pg) nei 
+                               | otherwise  = "Noone"
+                                where nei = f pg n -- list of either predecessors or successors
                  
 unlMap :: (a -> String) -> [a] -> String
 unlMap f = unlines . map f
@@ -93,7 +97,7 @@ addPaper p (pg, m) = case M.lookup p m of
     noNs = noNodes pg
     
 insertIfNotPresent k a m = if k `M.notMember` m then M.insert k a m else m
- {-               
+               
 getCitations :: PaperGraph -> Node -> [Node]
 getCitations = pre
 
@@ -121,7 +125,7 @@ mostCitedPaper pg = fst $ foldr1 max' (map (\(n,_) -> (n, indeg pg n)) (labNodes
     where  max' x y | snd x > snd y = x
                     | otherwise     = y
 
--}    
+   
 --instance Show PaperGraph where
   --  show p = show (graph  p)
 
