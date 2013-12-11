@@ -43,7 +43,7 @@ printGr pg = putStr $ unlMap showLNode (labNodes pg)
             showRefForNode   = showNeiForNode suc 
             showNeiForNode f n | (not . null) nei  = showList' (map (show . title . fromJust . lab pg) nei) "," 
                                | otherwise  = "Noone"
-                                where nei = f pg n -- list of either predecessors or successors
+                                where nei = reverse $ f pg n -- list of either predecessors or successors
                  
 unlMap :: (a -> String) -> [a] -> String
 unlMap f = unlines . map f
