@@ -11,7 +11,6 @@ import PrettyPrinter
 
 main = do
     (l,q) <- parseInput
-    print (l,q)
     mpg <- crawlPapers q l
     case mpg of
         Nothing -> ioError . userError $ "graph was not build :("
